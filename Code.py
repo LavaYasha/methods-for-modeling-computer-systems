@@ -12,11 +12,6 @@ def getRandNum(xi = 1.0, a = 17, M = 1000, b = 1):
     return xi, rand
 
 
-def mainLoop(Tzmin, Tzmax, Tsmin, Tsmax, a, xi, M, b): 
-    xi, randNum = getRandNum(xi, a, M, b)
-    T = getTime(Tzmin, Tzmin, randNum)
-    
-    pass 
 class Buffer(object):
     def __init__(self, size = 3):
         self.bufferSize = size
@@ -50,6 +45,7 @@ class Server(object):
 
 if __name__ == "__main__":
     
+
     Server1 = True
     Server2 = True
     
@@ -67,5 +63,10 @@ if __name__ == "__main__":
     M = int(input("M = "))
     b = int(input("b = "))
 
-    mainLoop(Tzmin, Tzmax, Tsmin, Tsmax, a, x0, M, b)
+    ServerWorkTime = 3600
+
+    for i in range(ServerWorkTime):
+        xi, randNum = getRandNum(x0, a, M, b)
+        Ts = getTime(Tsmin, Tsmax, randNum)
+        
     pass
