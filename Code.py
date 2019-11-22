@@ -1,72 +1,82 @@
 import numpy as np
 import random
+from itertools import accumulate
+import os
 # линейный распределенный закон для T = (Tmax - Tmin) * x[i] - Tmin
-def getTime(Tmin = 1, Tmax = 5, randNum = random.random()):
-    T = (Tmax - Tmin) * randNum - Tmin
+def getTime(Tmin, Tmax, randNum):
+    "linear distribution law for time"
+    T = (Tmax - Tmin) * randNum + Tmin
+    #print(f'rand number = {randNum}')
     return T
 
-# Генерация рандомных чисел 
+# Генерация рандомных чисел  // Usless //
 def getRandNum(xi = 1.0, a = 17, M = 1000, b = 1):
+    "gen pseudo random numbers"
     xi = (a * xi - b) % M
     rand = xi / M
     return xi, rand
 
-
-class Buffer(object):
-    def __init__(self, size = 3):
-        self.bufferSize = size
-        self.storage = list(range(size))
-        for i in range():
-            self.storage[i] = 0
-
-    def isEmpty(self):
-        for i in range(self.storage):
-            if self.storage[i] != 0:
-                return False
-        return True
-                
-
 class Server(object):
+    "TODO: discription"
     def __init__(self):
-        self.busy = False
-        self.OperationTime = 0
+        self.EmploymentStatus = 'free' # free - свободен busy - занят
+        self.CurrentOperationTime = 0 
+        self.downtime = 0
+        self.workTime = 0
+        self.pocCount = 0
 
-    def isBusy(self):
-        return self.busy
+def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount):
+    "собственно сама функция расчета"
+    TimeIn = []
     
-    def getOperationTime(self):
-        return self.OperationTime
+    #   обработка по времени первой программы
+    WorkTime = []
+    
+    TimeIn.append(round(getTime(Tzmin, Tzmax, random.random()),3))
+    WorkTime.append(round(getTime(Tsmin, Tsmax, random.random()),3))
+    
+    while TimeIn[-1] < simulation_time:
+        TimeIn.append(round(getTime(Tzmin, Tzmax, random.random()) + TimeIn[-1], 3))
+        WorkTime.append(round(getTime(Tsmin, Tsmax, random.random())))
+    #print ("\n\n\n")
+    #print (TimeIn)
+    #print ("\n\n\n")
+    Current_time = TimeIn[0]
+    #   Настройки серверов
+    Servers = []
+    for k in range(ServersCount):
+        Servers.append(Server())
+        
+    #   основной цикл внутри симмуляции
+    for i in range(len(TimeIn)):
+        
+        emptyServer = -1 # if -1 then all servers are busy
+        isOneServerFree = False 
 
-    def SetBusyServer(self, busy):
-        self.busy = busy
+        for j in range(len(Servers)):
+            if Servers[j].EmploymentStatus == 'free':
+                isOneServerFree = True
+                emptyServer = j 
+                break
+        
+        if isOneServerFree:
+            pass
+        pass
+    pass
 
-    def OperationTimeSet(self, T):
-        self.OperationTime = T    
 
 if __name__ == "__main__":
-    
+    os.system("CLS")
+    #   время симуляции впоследствии можно будет задать в часовом диапозоне
+    SimulationTime = 60 * 60 
 
-    Server1 = True
-    Server2 = True
-    
-    print ("Время прихода программ (линейный закон)")
-    Tzmin = float(input("Tzmin = "))
-    Tzmax = float(input("Tzmax = "))
-    
-    print ("Время обработки задач (линейный закон)")
-    Tsmin = int(input("Tsmin = "))
-    Tsmax = int(input("Tsmax = "))
+    #   время прихода программы (линейный закон)
+    Tzmin = 1 / 2
+    Tzmax = 5 / 6
 
-    print ("Настройка рандомайзера")
-    a = int(input("a = "))
-    x0 = int(input("x0 = "))
-    M = int(input("M = "))
-    b = int(input("b = "))
+    #  время обработки программы сервером программы (линейный закон)
+    Tsmin = 1
+    Tsmax = 5
 
-    ServerWorkTime = 3600
-
-    for i in range(ServerWorkTime):
-        xi, randNum = getRandNum(x0, a, M, b)
-        Ts = getTime(Tsmin, Tsmax, randNum)
-        
+    colculation(SimulationTime, Tzmin, Tzmax, Tsmin, Tsmax, 2)
     pass
