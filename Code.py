@@ -19,7 +19,7 @@ class Server(object):
     def __init__(self):
         self.EmploymentStatus = 'free' # free - свободен busy - занят
         self.CurrentOperationTime = 0 
-        self.downTime = 0
+        #self.downTime = 0
         self.workTime = 0
         self.procCount = 0
         self.InTime = 0
@@ -48,14 +48,16 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
         WorkTime.append(round(getTime(Tsmin, Tsmax, random.random()), 3))
      
     #   Время для расчетов
-    Current_time = TimeIn[0]
+    #Current_time = TimeIn[0]
 
     #   Инициализация серверов
     Servers = []
     for k in range(ServersCount):
         Servers.append(Server())
-        Servers[k].downTime += Current_time
+        #Servers[k].downTime += TimeIn[0]
 
+    sameTimeServersWork = [0 for i in range(ServersCount)]
+    sameTimeServersWork_begin = [0 for i in range(ServersCount)]
     #  Инициализация буфера
     buffer = []
     TimeBuffersWork = [0 for i in range(bufferSize)]
@@ -63,13 +65,17 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
     #   Флаг работы серверов
     #isWork = False
 
+    #   Время простоя всей системы
+    TimeFreeSystem = 0
+
     #   Время без использования буфера
     TimeWithoutBuffer = 0
     TimeWithoutBuffer_begin = 0
 
     #   счетчик программ не обработанные Вычислительной Системой
     leaveProg = 0
-    
+    AllServersAreFree = True
+
     #======================================#
     #   основной цикл внутри симмуляции    #
     #======================================#
@@ -78,23 +84,39 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
         emptyServer = -1 # if -1 then all servers are busy
         isOneServerFree = False 
 
+        if AllServersAreFree == True:
+            if i > 0:
+                TimeFreeSystem += TimeIn[i] - TimeIn[i - 1]
+            else:
+                TimeFreeSystem += TimeIn[i]
+
+        workServersCount = 0
         for j in range(len(Servers)):
             if Servers[j].EmploymentStatus == 'free':
-                if isOneServerFree:
-                    Servers[i].downTime += TimeIn[i] - Servers[i].ReleaseTime
-                    Servers[i].ReleaseTime = TimeIn[i]      # заглушка чтобы не насчитать лишнего времени бездействия
-                    continue
                 isOneServerFree = True
                 emptyServer = j 
-                
-        
+                break
+            else:
+                workServersCount += 1
+
         if (isOneServerFree) and (emptyServer != -1):
 
+            AllServersAreFree = False
+
             Servers[emptyServer].EmploymentStatus = 'busy'
-            Servers[emptyServer].TimeIn = TimeIn[i]
+            Servers[emptyServer].InTime = TimeIn[i]
             Servers[emptyServer].workTime = WorkTime[i]
             Servers[emptyServer].OutTime = TimeIn[i] + WorkTime[i]
             Servers[emptyServer].procCount += 1
+
+            workServersCount = 0
+            for j in range(len(Servers)):
+                if Servers[j].EmploymentStatus == 'busy':
+                    workServersCount += 1
+            
+            sameTimeServersWork_begin[workServersCount - 1] = TimeIn[i]
+            if workServersCount - 2 >= 0:
+                sameTimeServersWork[workServersCount - 2] += TimeIn[i] - sameTimeServersWork_begin[workServersCount - 2] 
 
             if TimeWithoutBuffer_begin == 0:
                 TimeWithoutBuffer_begin = TimeIn[i]
@@ -104,7 +126,7 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
             #   либо включаем таймер бездействия
             isOutTimeBeforeTimeIn = False
             for k in range(len(Servers)):
-                if Servers[k].OutTime < TimeIn:
+                if Servers[k].OutTime < TimeIn[i]:
                     isOutTimeBeforeTimeIn = True
                     #   если севрер освободился и в буфере есть программа, 
                     #   забираем программу из буффера в свободный сервер
@@ -115,21 +137,55 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
                         takedBuffer = buffer.pop(0)
                         Servers[k].EmploymentStatus = 'busy'
                         Servers[k].workTime = takedBuffer.WorkTime
-                        Servers[k].InTime = TimeIn[i] - Servers[k].OutTime
+                        Servers[k].InTime =  Servers[k].OutTime
                         Servers[k].OutTime = Servers[k].InTime + Servers[k].workTime
                         Servers[k].procCount += 1
-                    
+
                     #   если сервер освободился и в буффере нет программ,
                     #   устанавливаем статус сервера в "свободен" и включаем счетчик простоя
                     else:
+                        workServersCount = 0 
+                        for j in range(len(Servers)):
+                            if Servers[j].EmploymentStatus == 'busy':
+                                workServersCount += 1
+                            if workServersCount - 1 >= 0:
+                                sameTimeServersWork[workServersCount - 1] += TimeIn[i] - sameTimeServersWork_begin[workServersCount - 1] 
                         Servers[k].EmploymentStatus = 'free'
-                        Servers[k].downTime += TimeIn[i] - Servers[k].OutTime
                         Servers[k].ReleaseTime = Servers[k].OutTime
 
+            workServersCount = 0
+            for j in range(len(Servers)):
+                if Servers[j].EmploymentStatus == 'busy':
+                    workServersCount += 1
+
+
+            AllServersAreFree = True
+            for g in range(len(Servers)):
+                if Servers[g].EmploymentStatus == 'busy':
+                    AllServersAreFree = False
+
+            if AllServersAreFree == True:
+                MaxOutTime = 0
+                for g in range(len(Servers)):
+                    if Servers[g].OutTime > MaxOutTime:
+                        MaxOutTime = Servers[g].OutTime
+                TimeFreeSystem += TimeIn[i] - MaxOutTime
 
             #   если все сервера в работе мы добавляем программу в буффер 
             #   (если все буфферы заняты программа не обрабатывается)
             if isOutTimeBeforeTimeIn == False:
+
+                if len(buffer) == 0:
+                    workServersCount = 0
+                    for j in range(len(Servers)):
+                        if Servers[j].EmploymentStatus == 'busy':
+                            workServersCount += 1
+                    if workServersCount - 1 >= 0:
+                        sameTimeServersWork[workServersCount - 1] += TimeIn[i] - sameTimeServersWork_begin[workServersCount - 1] 
+                
+                
+                sameTimeServersWork_begin[workServersCount - 1] = TimeIn[i]  
+
                 if len(buffer) < bufferSize:
                     buffer.append(Buff())
                     buffer[-1].WorkTime = WorkTime[i]
@@ -137,14 +193,17 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
                     if len(buffer) == 1:
                         TimeWithoutBuffer += TimeIn[i] - TimeWithoutBuffer_begin
                         TimeWithoutBuffer_begin = 0
-                    #for k in range(len(buffer)):
-                    #    TimeBuffersWork[k] += TimeIn[i] - buffer[k].TimeIn   
+                    
+                
                 else:
                     leaveProg += 1
                     continue
     #======================================#
     #   основной цикл внутри симмуляции    #
     #======================================#
+
+    #       p0              p1  ... pn (Server) pn+1 ... pm (buffer)
+    return TimeFreeSystem, sameTimeServersWork, TimeBuffersWork,    Servers
 
 
 if __name__ == "__main__":
@@ -159,5 +218,26 @@ if __name__ == "__main__":
     Tsmin = 1
     Tsmax = 5
 
-    colculation(SimulationTime, Tzmin, Tzmax, Tsmin, Tsmax, 2, 3)
+    output = colculation(SimulationTime, Tzmin, Tzmax, Tsmin, Tsmax, 2, 3)
+    p0 = output[0]
+    pServer = output[1]
+    pBuff = output[2]
+    Server = output[3]
+
+    print (p0)
+    print (pServer)
+    print (pBuff)
+    for i in range(len(Server)):
+        print(Server[i].procCount)
+
+    p0 = p0 / SimulationTime
+    p1 = pServer[0] / SimulationTime
+    p2 = pServer[1] / SimulationTime
+    p3 = pBuff[0] / SimulationTime
+    p4 = pBuff[1] / SimulationTime
+    p5 = pBuff[2] / SimulationTime
+
+
+    print('===')
+    print(f'p0 = {p0}, p1 = {p1}, p2 = {p2}, p3 = {p3}, p4 = {p4}, p5 = {p5}, sum P = {p1 + p2 + p3 + p4 + p5}')
     pass
