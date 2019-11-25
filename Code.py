@@ -32,6 +32,14 @@ class Buff(object):
         self.TimeOut = 0
         self.WorkTime = 0
 
+def getCurrentCountWorksServer(Servers):
+    count = 0
+    for i in range(len(Servers)):
+        if Servers[i].EmploymentStatus == 'busy':
+            count += 1
+    
+    return count
+
 def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, bufferSize):
     "функция расчета"
     #   время прихода программ
@@ -61,16 +69,13 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
     #  Инициализация буфера
     buffer = []
     TimeBuffersWork = [0 for i in range(bufferSize)]
+    TimeBuffersWork_begin = [0 for i in range(bufferSize)]
 
     #   Флаг работы серверов
     #isWork = False
 
     #   Время простоя всей системы
     TimeFreeSystem = 0
-
-    #   Время без использования буфера
-    TimeWithoutBuffer = 0
-    TimeWithoutBuffer_begin = 0
 
     #   счетчик программ не обработанные Вычислительной Системой
     leaveProg = 0
@@ -83,121 +88,87 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
         
         emptyServer = -1 # if -1 then all servers are busy
         isOneServerFree = False 
-
-        if AllServersAreFree == True:
-            if i > 0:
-                TimeFreeSystem += TimeIn[i] - TimeIn[i - 1]
-            else:
-                TimeFreeSystem += TimeIn[i]
-
-        workServersCount = 0
+        
         for j in range(len(Servers)):
             if Servers[j].EmploymentStatus == 'free':
+                emptyServer = j
                 isOneServerFree = True
-                emptyServer = j 
                 break
-            else:
-                workServersCount += 1
-
-        if (isOneServerFree) and (emptyServer != -1):
-
-            AllServersAreFree = False
-
+        
+        if emptyServer != -1 and isOneServerFree:
+            
             Servers[emptyServer].EmploymentStatus = 'busy'
             Servers[emptyServer].InTime = TimeIn[i]
             Servers[emptyServer].workTime = WorkTime[i]
-            Servers[emptyServer].OutTime = TimeIn[i] + WorkTime[i]
+            Servers[emptyServer].OutTime = Servers[emptyServer].InTime + Servers[emptyServer].workTime
             Servers[emptyServer].procCount += 1
 
-            workServersCount = 0
-            for j in range(len(Servers)):
-                if Servers[j].EmploymentStatus == 'busy':
-                    workServersCount += 1
-            
-            sameTimeServersWork_begin[workServersCount - 1] = TimeIn[i]
-            if workServersCount - 2 >= 0:
-                sameTimeServersWork[workServersCount - 2] += TimeIn[i] - sameTimeServersWork_begin[workServersCount - 2] 
-
-            if TimeWithoutBuffer_begin == 0:
-                TimeWithoutBuffer_begin = TimeIn[i]
+            sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] = TimeIn[i]
+            t = 0
+            while t < getCurrentCountWorksServer(Servers):
+                sameTimeServersWork[t] += TimeIn[i] - sameTimeServersWork_begin[t]
+                t += 1
         else:
             #   если ко времени прихода программы какие то сервера закончат обработку предыдущих программ
             #   то либо забираем первую в очереди на обработку программу из буффера 
             #   либо включаем таймер бездействия
             isOutTimeBeforeTimeIn = False
-            for k in range(len(Servers)):
-                if Servers[k].OutTime < TimeIn[i]:
-                    isOutTimeBeforeTimeIn = True
-                    #   если севрер освободился и в буфере есть программа, 
-                    #   забираем программу из буффера в свободный сервер
-                    if len(buffer) > 0:
-                        
-                        TimeBuffersWork[len(buffer)-1] += Servers[k].OutTime - buffer[-1].TimeIn   
-                        
-                        takedBuffer = buffer.pop(0)
-                        Servers[k].EmploymentStatus = 'busy'
-                        Servers[k].workTime = takedBuffer.WorkTime
-                        Servers[k].InTime =  Servers[k].OutTime
-                        Servers[k].OutTime = Servers[k].InTime + Servers[k].workTime
-                        Servers[k].procCount += 1
-
-                    #   если сервер освободился и в буффере нет программ,
-                    #   устанавливаем статус сервера в "свободен" и включаем счетчик простоя
-                    else:
-                        workServersCount = 0 
-                        for j in range(len(Servers)):
-                            if Servers[j].EmploymentStatus == 'busy':
-                                workServersCount += 1
-                            if workServersCount - 1 >= 0:
-                                sameTimeServersWork[workServersCount - 1] += TimeIn[i] - sameTimeServersWork_begin[workServersCount - 1] 
-                        Servers[k].EmploymentStatus = 'free'
-                        Servers[k].ReleaseTime = Servers[k].OutTime
-
-            workServersCount = 0
+            busyFreeServer = False
             for j in range(len(Servers)):
-                if Servers[j].EmploymentStatus == 'busy':
-                    workServersCount += 1
+                if Servers[j].OutTime < TimeIn[i]:
+                    isOutTimeBeforeTimeIn = True
+                    if len(buffer) > 0:
+                        getBuff = buffer.pop(0)
+                        Servers[j].InTime = Servers[j].OutTime
+                        Servers[j].EmploymentStatus = 'busy'
+                        Servers[j].workTime = getBuff.WorkTime
+                        Servers[j].OutTime = Servers[j].InTime + Servers[j].workTime
+                        Servers[j].procCount += 1
 
+                        if len(buffer) == bufferSize - 1:
+                            TimeBuffersWork_begin[len(buffer) - 2] = Servers[j].OutTime
+                        elif len(buffer) < bufferSize - 1:
+                            TimeBuffersWork_begin[len(buffer) - 1] = Servers[j].OutTime
+                            TimeBuffersWork[len(buffer)] = TimeIn[i] - TimeBuffersWork_begin[len(buffer)]
+                    else:
+                        sameTimeServersWork[getCurrentCountWorksServer(Servers) - 1] += Servers[j].OutTime - sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1]
+                        if busyFreeServer == False:
 
-            AllServersAreFree = True
-            for g in range(len(Servers)):
-                if Servers[g].EmploymentStatus == 'busy':
-                    AllServersAreFree = False
+                            Servers[j].EmploymentStatus = 'free'
+                            if getCurrentCountWorksServer(Servers) == 0:
+                                TimeFreeSystem += TimeIn[i] - Servers[j].OutTime 
 
-            if AllServersAreFree == True:
-                MaxOutTime = 0
-                for g in range(len(Servers)):
-                    if Servers[g].OutTime > MaxOutTime:
-                        MaxOutTime = Servers[g].OutTime
-                TimeFreeSystem += TimeIn[i] - MaxOutTime
+                            sameTimeServersWork[getCurrentCountWorksServer(Servers) - 2] += TimeIn[i] - Servers[j].OutTime
+                            Servers[j].InTime = TimeIn[i] 
+                            Servers[j].workTime = WorkTime[i]
+                            Servers[j].EmploymentStatus = 'busy'
+                            Servers[j].OutTime = Servers[j].InTime + Servers[j].workTime
+                            Servers[j].procCount += 1
+                            busyFreeServer = True
+                            sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] = TimeIn[i]
 
-            #   если все сервера в работе мы добавляем программу в буффер 
-            #   (если все буфферы заняты программа не обрабатывается)
+                        else:
+                            Servers[j].EmploymentStatus = 'free'
+                            Servers[j].ReleaseTime = Servers[j].OutTime
+                            sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] = Servers[j].OutTime
+
             if isOutTimeBeforeTimeIn == False:
-
-                if len(buffer) == 0:
-                    workServersCount = 0
-                    for j in range(len(Servers)):
-                        if Servers[j].EmploymentStatus == 'busy':
-                            workServersCount += 1
-                    if workServersCount - 1 >= 0:
-                        sameTimeServersWork[workServersCount - 1] += TimeIn[i] - sameTimeServersWork_begin[workServersCount - 1] 
-                
-                
-                sameTimeServersWork_begin[workServersCount - 1] = TimeIn[i]  
-
                 if len(buffer) < bufferSize:
                     buffer.append(Buff())
-                    buffer[-1].WorkTime = WorkTime[i]
-                    buffer[-1].TimeIn = TimeIn[i]
-                    if len(buffer) == 1:
-                        TimeWithoutBuffer += TimeIn[i] - TimeWithoutBuffer_begin
-                        TimeWithoutBuffer_begin = 0
-                    
                 
+                    if len(buffer) == 1:
+                        TimeBuffersWork_begin[0] = TimeIn[i]
+                        sameTimeServersWork[-1] += TimeIn[i] - sameTimeServersWork_begin[-1]
+                    else:
+                        TimeBuffersWork_begin[len(buffer) - 1] = TimeIn[i]
+                        TimeBuffersWork[len(buffer) - 2] = TimeIn[i] - TimeBuffersWork_begin[len(buffer) - 2]
                 else:
                     leaveProg += 1
-                    continue
+
+
+
+
+        
     #======================================#
     #   основной цикл внутри симмуляции    #
     #======================================#
