@@ -97,6 +97,11 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
         
         if emptyServer != -1 and isOneServerFree:
             
+            t = getCurrentCountWorksServer(Servers) - 1
+            #while t < getCurrentCountWorksServer(Servers):
+            sameTimeServersWork[t] += TimeIn[i] - sameTimeServersWork_begin[t]
+                # t += 1
+
             Servers[emptyServer].EmploymentStatus = 'busy'
             Servers[emptyServer].InTime = TimeIn[i]
             Servers[emptyServer].workTime = WorkTime[i]
@@ -104,10 +109,6 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
             Servers[emptyServer].procCount += 1
 
             sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] = TimeIn[i]
-            t = 0
-            while t < getCurrentCountWorksServer(Servers):
-                sameTimeServersWork[t] += TimeIn[i] - sameTimeServersWork_begin[t]
-                t += 1
         else:
             #   если ко времени прихода программы какие то сервера закончат обработку предыдущих программ
             #   то либо забираем первую в очереди на обработку программу из буффера 
@@ -124,6 +125,8 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
                         Servers[j].workTime = getBuff.WorkTime
                         Servers[j].OutTime = Servers[j].InTime + Servers[j].workTime
                         Servers[j].procCount += 1
+
+                        sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] = Servers[j].OutTime
 
                         if len(buffer) == bufferSize - 1:
                             TimeBuffersWork_begin[len(buffer) - 2] = Servers[j].OutTime
@@ -164,11 +167,8 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
                         TimeBuffersWork[len(buffer) - 2] = TimeIn[i] - TimeBuffersWork_begin[len(buffer) - 2]
                 else:
                     leaveProg += 1
+                    TimeBuffersWork[len(buffer) - 1] = TimeIn[i] - TimeBuffersWork_begin[len(buffer) - 1]
 
-
-
-
-        
     #======================================#
     #   основной цикл внутри симмуляции    #
     #======================================#
