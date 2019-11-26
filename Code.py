@@ -54,7 +54,11 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
     while TimeIn[-1] < simulation_time:
         TimeIn.append(round(getTime(Tzmin, Tzmax, random.random()) + TimeIn[-1], 3))
         WorkTime.append(round(getTime(Tsmin, Tsmax, random.random()), 3))
-     
+
+    print(f'len = {len(TimeIn)}')
+    print(TimeIn)
+
+
     #   Время для расчетов
     #Current_time = TimeIn[0]
 
@@ -80,7 +84,7 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
     #   счетчик программ не обработанные Вычислительной Системой
     leaveProg = 0
     AllServersAreFree = True
-
+    TimeProgInCS = []
     #======================================#
     #   основной цикл внутри симмуляции    #
     #======================================#
@@ -99,16 +103,18 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
             
             t = getCurrentCountWorksServer(Servers) - 1
             #while t < getCurrentCountWorksServer(Servers):
-            sameTimeServersWork[t] += TimeIn[i] - sameTimeServersWork_begin[t]
+            sameTimeServersWork[t] += round(TimeIn[i] - sameTimeServersWork_begin[t] ,3 )
                 # t += 1
 
             Servers[emptyServer].EmploymentStatus = 'busy'
-            Servers[emptyServer].InTime = TimeIn[i]
-            Servers[emptyServer].workTime = WorkTime[i]
-            Servers[emptyServer].OutTime = Servers[emptyServer].InTime + Servers[emptyServer].workTime
+            Servers[emptyServer].InTime = round(TimeIn[i] , 3)
+            Servers[emptyServer].workTime = round(WorkTime[i] , 3)
+            Servers[emptyServer].OutTime = round(Servers[emptyServer].InTime + Servers[emptyServer].workTime , 3)
             Servers[emptyServer].procCount += 1
 
-            sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] = TimeIn[i]
+            TimeProgInCS.append(round(WorkTime[i],3)) 
+            
+            sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] = round(TimeIn[i] , 3)
         else:
             #   если ко времени прихода программы какие то сервера закончат обработку предыдущих программ
             #   то либо забираем первую в очереди на обработку программу из буффера 
@@ -120,61 +126,65 @@ def colculation(simulation_time, Tzmin, Tzmax, Tsmin, Tsmax, ServersCount, buffe
                     isOutTimeBeforeTimeIn = True
                     if len(buffer) > 0:
                         getBuff = buffer.pop(0)
-                        Servers[j].InTime = Servers[j].OutTime
+                        Servers[j].InTime = round(Servers[j].OutTime, 3)
                         Servers[j].EmploymentStatus = 'busy'
-                        Servers[j].workTime = getBuff.WorkTime
-                        Servers[j].OutTime = Servers[j].InTime + Servers[j].workTime
+                        Servers[j].workTime = round(getBuff.WorkTime , 3)
+                        Servers[j].OutTime = round(Servers[j].InTime + Servers[j].workTime , 3)
                         Servers[j].procCount += 1
+                        
+                        TimeProgInCS.append(round(TimeIn[i] - getBuff.TimeIn + getBuff.WorkTime,3))
 
-                        sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] = Servers[j].OutTime
+                        sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] = round(Servers[j].OutTime , 3)
 
                         if len(buffer) == bufferSize - 1:
-                            TimeBuffersWork_begin[len(buffer) - 2] = Servers[j].OutTime
+                            TimeBuffersWork_begin[len(buffer) - 2] =round( Servers[j].OutTime, 3)
                         elif len(buffer) < bufferSize - 1:
-                            TimeBuffersWork_begin[len(buffer) - 1] = Servers[j].OutTime
-                            TimeBuffersWork[len(buffer)] = TimeIn[i] - TimeBuffersWork_begin[len(buffer)]
+                            TimeBuffersWork_begin[len(buffer) - 1] = round(Servers[j].OutTime, 3)
+                            TimeBuffersWork[len(buffer)] = round(TimeIn[i] - TimeBuffersWork_begin[len(buffer)], 3)
                     else:
-                        sameTimeServersWork[getCurrentCountWorksServer(Servers) - 1] += Servers[j].OutTime - sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1]
+                        sameTimeServersWork[getCurrentCountWorksServer(Servers) - 1] += round(Servers[j].OutTime - sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] , 3)
                         if busyFreeServer == False:
 
                             Servers[j].EmploymentStatus = 'free'
                             if getCurrentCountWorksServer(Servers) == 0:
                                 TimeFreeSystem += TimeIn[i] - Servers[j].OutTime 
 
-                            sameTimeServersWork[getCurrentCountWorksServer(Servers) - 2] += TimeIn[i] - Servers[j].OutTime
-                            Servers[j].InTime = TimeIn[i] 
-                            Servers[j].workTime = WorkTime[i]
+                            sameTimeServersWork[getCurrentCountWorksServer(Servers) - 2] += round(TimeIn[i] - Servers[j].OutTime, 3)
+                            Servers[j].InTime = round( TimeIn[i] , 3)
+                            Servers[j].workTime = round(WorkTime[i], 3)
                             Servers[j].EmploymentStatus = 'busy'
-                            Servers[j].OutTime = Servers[j].InTime + Servers[j].workTime
+                            Servers[j].OutTime = round(Servers[j].InTime + Servers[j].workTime, 3)
                             Servers[j].procCount += 1
                             busyFreeServer = True
-                            sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] = TimeIn[i]
+                            sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] = round(TimeIn[i], 3)
 
                         else:
                             Servers[j].EmploymentStatus = 'free'
                             Servers[j].ReleaseTime = Servers[j].OutTime
-                            sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] = Servers[j].OutTime
+                            sameTimeServersWork_begin[getCurrentCountWorksServer(Servers) - 1] =round( Servers[j].OutTime, 3)
 
             if isOutTimeBeforeTimeIn == False:
                 if len(buffer) < bufferSize:
                     buffer.append(Buff())
-                
+                    buffer[-1].TimeIn = TimeIn[i]
+
                     if len(buffer) == 1:
-                        TimeBuffersWork_begin[0] = TimeIn[i]
-                        sameTimeServersWork[-1] += TimeIn[i] - sameTimeServersWork_begin[-1]
+                        TimeBuffersWork_begin[0] = round(TimeIn[i], 3)
+                        sameTimeServersWork[-1] += round(TimeIn[i] - sameTimeServersWork_begin[-1], 3)
                     else:
-                        TimeBuffersWork_begin[len(buffer) - 1] = TimeIn[i]
-                        TimeBuffersWork[len(buffer) - 2] = TimeIn[i] - TimeBuffersWork_begin[len(buffer) - 2]
+                        TimeBuffersWork_begin[len(buffer) - 1] = round(TimeIn[i], 3)
+                        TimeBuffersWork[len(buffer) - 2] = round(TimeIn[i] - TimeBuffersWork_begin[len(buffer) - 2], 3)
                 else:
                     leaveProg += 1
-                    TimeBuffersWork[len(buffer) - 1] = TimeIn[i] - TimeBuffersWork_begin[len(buffer) - 1]
+                    TimeBuffersWork[len(buffer) - 1] = round(TimeIn[i] - TimeBuffersWork_begin[len(buffer) - 1],3)
+                    TimeProgInCS.append(0)
 
     #======================================#
     #   основной цикл внутри симмуляции    #
     #======================================#
 
     #       p0              p1  ... pn (Server) pn+1 ... pm (buffer)
-    return TimeFreeSystem, sameTimeServersWork, TimeBuffersWork,    Servers
+    return TimeFreeSystem, sameTimeServersWork, TimeBuffersWork,    Servers, TimeIn, leaveProg, TimeProgInCS
 
 
 if __name__ == "__main__":
@@ -194,21 +204,54 @@ if __name__ == "__main__":
     pServer = output[1]
     pBuff = output[2]
     Server = output[3]
+    AllProc = output[4]
+    leaveProg = output[5]
+    TimeProgInCS = output[6]
 
     print (p0)
     print (pServer)
     print (pBuff)
+    print (f'TimeProgInCS = {len(TimeProgInCS)} len tin = {len(AllProc)}')
     for i in range(len(Server)):
         print(Server[i].procCount)
 
-    p0 = p0 / SimulationTime
-    p1 = pServer[0] / SimulationTime
-    p2 = pServer[1] / SimulationTime
-    p3 = pBuff[0] / SimulationTime
-    p4 = pBuff[1] / SimulationTime
-    p5 = pBuff[2] / SimulationTime
+    p0 = round(p0 / SimulationTime,7)               #   вероятность бездействия системы во время симуляции
+    p1 = round(pServer[0] / SimulationTime,3)       #   вероятность работы одного сервера 
+    p2 = round(pServer[1] / SimulationTime,3)       #   вероятность работы двух серверов
+    p3 = round(pBuff[0] / SimulationTime,6)         #   вероятность работы с одним 
+    p4 = round(pBuff[1] / SimulationTime,6)         #                        двумя
+    p5 = round(pBuff[2] / SimulationTime,6)         #                        тремя буфферами
+    
+    DoneProc = 0
+    for i in range(len(Server)):
+        DoneProc += Server[i].procCount
 
+    Q = round(DoneProc / len(AllProc),3)            #   среднее кол-во программ обработанных серверами
+    S = round(DoneProc / SimulationTime,3)          #   абсолютная пропускная способность – среднее число программ, обработанных в единицу времени
+    Potk = round(leaveProg / SimulationTime,3)      #   вероятность отказа, т.е. того, что программа будет не обработанной
+
+    K = round(p1 + p2,3)                            #  не уверен что так вычитывается данная вероятность (среднее число занятых серверов) TODO
+    Nprog = round(len(AllProc) / len(AllProc),3)    #  тоже не очень понятно (среднее число программ в ВС)                                TODO
+    Tprog = round(sum(TimeProgInCS) / SimulationTime, 3)
+    Nbuf = 0                                        # TODO
+
+    AllTimeInBuffer = sum(pBuff)
+    Tbuf =round( AllTimeInBuffer / SimulationTime,3)
 
     print('===')
-    print(f'p0 = {p0}, p1 = {p1}, p2 = {p2}, p3 = {p3}, p4 = {p4}, p5 = {p5}, sum P = {p1 + p2 + p3 + p4 + p5}')
+    print(f' p0 = {p0}\n' +
+    f'p1 = {p1}\n' + 
+    f'p2 = {p2}\n' +
+    f'p3 = {p3}\n' + 
+    f'p4 = {p4}\n' + 
+    f'p5 = {p5}\n' + 
+    f'sum P = {p1 + p2 + p3 + p4 + p5}\n' + 
+    f'Q = {Q}\n' + 
+    f'S = {S}\n' + 
+    f'P отк = {Potk}\n' + 
+    f'K = {K}\n' + 
+    f'N прог = {Nprog}\n' +
+    f'T прог = {Tprog}\n' + 
+    f'N буф = {Nbuf}\n' +
+    f'T буф = {Tbuf}')
     pass
