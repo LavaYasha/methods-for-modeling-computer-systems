@@ -1,61 +1,7 @@
 import random
 from tkinter import *
-#===============================================================
-class Window(Frame):
 
-    def __init__(self, parent):
-        Frame.__init__(self, parent)   
-        self.parent = parent        
-        self.initUI()
-
-        #self.SimulationTime = 0
- #============тут весь визуал пишется============
-    def initUI(self):
-        #Left Frame
-        self.left_frame = LabelFrame(self)
-
-        self.SimulationTime_LabelFrame = LabelFrame(self.left_frame)
-        self.SimulationTime_label = Label(self.SimulationTime_LabelFrame, text="Время симуляции")
-        self.SimulationTime_label.pack(side=LEFT, padx=10, pady=10)
-        self.SimulationTime_Entry = Entry(self.SimulationTime_LabelFrame)
-        self.SimulationTime_Entry.bind("<Any-KeyRelease>", self.detect)
-        self.SimulationTime_Entry.pack(side=RIGHT, padx=10, pady =10)
-        self.SimulationTime_LabelFrame.pack(anchor=W, padx=10, pady=10, fill=X)
-
-        self.CountServer_LabelFrame = LabelFrame(self.left_frame)
-        self.CountServer_label = Label(self.CountServer_LabelFrame, text="Колличество серверов")
-        self.CountServer_label.pack(side=LEFT, padx=10, pady=10)
-        self.CountServer_Entry = Entry(self.CountServer_LabelFrame)
-        self.CountServer_Entry.bind("<Any-KeyRelease>", self.detect)
-        self.CountServer_Entry.pack(side=RIGHT, padx=10, pady =10)
-        self.CountServer_LabelFrame.pack(anchor=W, padx=10, pady=10, fill=X)
-
-        self.BufferSize_LabelFrame = LabelFrame(self.left_frame)
-        self.BufferSize_label = Label(self.BufferSize_LabelFrame, text="Размер буфера")
-        self.BufferSize_label.pack(side=LEFT, padx=10, pady=10)
-        self.BufferSize_Entry = Entry(self.BufferSize_LabelFrame)
-        self.BufferSize_Entry.bind("<Any-KeyRelease>", self.detect)
-        self.BufferSize_Entry.pack(side=RIGHT, padx=10, pady =10)
-        self.BufferSize_LabelFrame.pack(anchor=W, padx=10, pady=10, fill=X)
-
-        self.left_frame.pack(side=LEFT, padx=5, pady=10, fill=Y)
-        #Left Frame
-
-        #Right Frame
-        self.right_frame = LabelFrame(self)
-
-        self.BufferSize_LabelFrame = LabelFrame(self.right_frame)
-        self.BufferSize_label = Label(self.BufferSize_LabelFrame, text="Размер буфера")
-        self.BufferSize_label.pack(side=LEFT, padx=10, pady=10)
-        self.BufferSize_Entry = Entry(self.BufferSize_LabelFrame)
-        self.BufferSize_Entry.bind("<Any-KeyRelease>", self.detect)
-        self.BufferSize_Entry.pack(side=RIGHT, padx=10, pady =10)
-        self.BufferSize_LabelFrame.pack(anchor=W, padx=10, pady=10, fill=X)
-
-        self.right_frame.pack(side=RIGHT, padx=5, pady=10, fill=Y)
-        #Right Frame
-
-    def detect(self, event):
+def detect(event):
         data = event.widget.get()
         if not data.isdigit() and data != '':
             result = ''
@@ -64,12 +10,6 @@ class Window(Frame):
                     result += i
             event.widget.delete(0, END)
             event.widget.insert(0, result)
-
-    
-    def porc(self):
-        #   время симуляции впоследствии можно будет задать в часовом диапозоне
-        pass
-#===============================================================
 
 # линейный распределенный закон для T = (Tmax - Tmin) * x[i] - Tmin
 def getTime(Tmin, Tmax, randNum):
@@ -332,7 +272,7 @@ if __name__ == "__main__":
     AllTimeInBuffer = sum(pBuff)
     Tbuf =round( AllTimeInBuffer / SimulationTime,3)
 
-    outPutText = (f' p0 = {p0}\n' +
+    outPutText = (f'p0 = {p0}\n' +
                 f'p1 = {p1}\n' + 
                 f'p2 = {p2}\n' +
                 f'p3 = {p3}\n' + 
@@ -351,7 +291,82 @@ if __name__ == "__main__":
     print(outPutText)
 
     root = Tk()
-    ex = Window(root)
-    #root.geometry("450x400+500+500")
+
+        #Left Frame
+    left_frame = LabelFrame(root)
+
+    SimulationTime_LabelFrame = LabelFrame(left_frame)
+    SimulationTime_label = Label(SimulationTime_LabelFrame, text="Время симуляции (сек)")
+    SimulationTime_label.pack(side=LEFT, padx=10, pady=10)
+    SimulationTime_Entry = Entry(SimulationTime_LabelFrame)
+    SimulationTime_Entry.bind("<Any-KeyRelease>", detect)
+    SimulationTime_Entry.insert(END, SimulationTime)
+    SimulationTime_Entry.pack(side=RIGHT, padx=10, pady =10)
+    SimulationTime_LabelFrame.pack(anchor=W, padx=10, pady=10, fill=X)
+
+    CountServer_LabelFrame = LabelFrame(left_frame)
+    CountServer_label = Label(CountServer_LabelFrame, text="Колличество серверов")
+    CountServer_label.pack(side=LEFT, padx=10, pady=10)
+    CountServer_Entry = Entry(CountServer_LabelFrame)
+    CountServer_Entry.bind("<Any-KeyRelease>", detect)
+    CountServer_Entry.insert(END, '2')
+    CountServer_Entry.pack(side=RIGHT, padx=10, pady =10)
+    CountServer_LabelFrame.pack(anchor=W, padx=10, pady=10, fill=X)
+
+    BufferSize_LabelFrame = LabelFrame(left_frame)
+    BufferSize_label = Label(BufferSize_LabelFrame, text="Размер буфера")
+    BufferSize_label.pack(side=LEFT, padx=10, pady=10)
+    BufferSize_Entry = Entry(BufferSize_LabelFrame)
+    BufferSize_Entry.bind("<Any-KeyRelease>", detect)
+    BufferSize_Entry.insert(END, '3')
+    BufferSize_Entry.pack(side=RIGHT, padx=10, pady =10)
+    BufferSize_LabelFrame.pack(anchor=W, padx=10, pady=10, fill=X)
+
+    Tz_LabelFrame = LabelFrame(left_frame)
+    Tzmin_label = Label(Tz_LabelFrame, text="Tz min ")
+    Tzmin_label.pack(side=LEFT, padx=10, pady=10)
+    Tzmin_Entry = Entry(Tz_LabelFrame)
+    Tzmin_Entry.bind("<Any-KeyRelease>", detect)
+    Tzmin_Entry.insert(END, Tzmin)
+    Tzmin_Entry.pack(side=LEFT, padx=10, pady =10)
+
+    Tzmax_label = Label(Tz_LabelFrame, text="Tz max ")
+    Tzmax_label.pack(side=LEFT, padx=10, pady=10)
+    Tzmax_Entry = Entry(Tz_LabelFrame)
+    Tzmax_Entry.bind("<Any-KeyRelease>", detect)
+    Tzmax_Entry.insert(END, Tzmax)
+    Tzmax_Entry.pack(side=RIGHT, padx=10, pady =10)
+    Tz_LabelFrame.pack(anchor=W, padx=10, pady=10, fill=X)
+
+    Ts_LabelFrame = LabelFrame(left_frame)
+    Tsmin_label = Label(Ts_LabelFrame, text="Tz min ")
+    Tsmin_label.pack(side=LEFT, padx=10, pady=10)
+    Tsmin_Entry = Entry(Ts_LabelFrame)
+    Tsmin_Entry.bind("<Any-KeyRelease>", detect)
+    Tsmin_Entry.insert(END, Tsmin)
+    Tsmin_Entry.pack(side=LEFT, padx=10, pady =10)
+
+    Tsmax_label = Label(Ts_LabelFrame, text="Tz max ")
+    Tsmax_label.pack(side=LEFT, padx=10, pady=10)
+    Tsmax_Entry = Entry(Ts_LabelFrame)
+    Tsmax_Entry.bind("<Any-KeyRelease>", detect)
+    Tsmax_Entry.insert(END, Tsmax)
+    Tsmax_Entry.pack(side=RIGHT, padx=10, pady =10)
+    Ts_LabelFrame.pack(anchor=W, padx=10, pady=10, fill=X)
+
+    left_frame.pack(side=LEFT, padx=5, pady=10, fill=Y)
+    #Left Frame
+
+    #Right Frame
+    right_frame = LabelFrame(root)
+
+    output_textField = Text(right_frame, height=40)
+    output_textField.insert(END,outPutText)
+    output_textField.pack(padx=10, pady=10, side=TOP)
+
+    right_frame.pack(side=RIGHT, padx=5, pady=10, fill=Y)
+    #Right Frame
+
+
     root.mainloop()
     pass
